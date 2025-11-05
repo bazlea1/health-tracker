@@ -68,7 +68,7 @@ def insert_bp(entry_date, systolic, diastolic, notes):
     """Insert a new record into the blood pressure table."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execure("""
+    cursor.execute("""
         INSERT INTO blood_pressure (date, systolic, diastolic, notes)
         VALUES (?,?,?,?)
     """, (entry_date,systolic,diastolic,notes))
@@ -136,20 +136,45 @@ if section == "⚖️ Weight Tracker":
             "notes":"Notes"
         })
 
-        # Compute a simple trend line (rolling average)
-        data["Trend"] = data["Weight"].rolling(window=3).mean()
+        targetWeight = 100
+
+        minWeight = data["Weight"].min() if data["Weight"].min() < targetWeight else targetWeight
+        maxWeight = data["Weight"].max()
+        
+        minTargetBodyFat = 11
+        maxTargetBodyFat = 20
+        minBodyFat = data["Body Fat %"].min() if data["Body Fat %"].min() < minTargetBodyFat else minTargetBodyFat
+        maxBodyFat = data["Body Fat %"].max()
 
         # ---------- Chart ----------
         st.subheader("📊 Weight Trend Over Time")
         fig = px.line(
             data,
             x="Date",
-            y=["Weight", "Body Fat %", "Trend"],
+            y=["Weight"],
             markers=True,
             labels={"value": "Weight (kg)", "variable": "Metric"},
-            color_discrete_map={"Weight": "#1f77b4", "Body Fat %": "#F54927", "Trend": "#ff7f0e"},
+            color_discrete_map={"Weight": "#1f77b4"},
         )
         fig.update_layout(height=400, hovermode="x unified")
+        fig.update_layout(yaxis_range=[(minWeight-10),(maxWeight+10)])
+        fig.add_hline(y=targetWeight, line_color="green")
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.subheader("📊 Body Fat % Trend Over Time")
+        fig = px.line(
+            data,
+            x="Date",
+            y=["Body Fat %"],
+            markers=True,
+            labels={"value": "Body Fat (%)", "variable": "Metric"},
+            color_discrete_map={"Body Fat %": "#F54927"},
+        )
+        fig.update_layout(height=400, hovermode="x unified")
+        fig.update_layout(yaxis_range=[(minBodyFat-5),(maxBodyFat+5)])
+        fig.add_hrect(
+            y0=minTargetBodyFat, y1=maxTargetBodyFat, 
+            line_width=0, fillcolor="green", opacity=0.2)
         st.plotly_chart(fig, use_container_width=True)
 
         # ---------- Stats ----------
@@ -202,6 +227,16 @@ elif section == "🩺 Blood Pressure Tracker":
         data_bp["date"] = pd.to_datetime(data_bp["date"])
         data_bp = data_bp.rename(columns={"date": "Date", "systolic": "Systolic", "diastolic": "Diastolic", "notes": "Notes"})
 
+        minTargetSystolic = 100
+        maxTargetSystolic = 120
+        minTargetDiastolic = 60
+        maxTargetDiastolic = 80
+
+        minSystolic = data_bp["Systolic"].min()
+        maxSystolic = data_bp["Systolic"].max()
+        minDiastolic = data_bp["Diastolic"].min() if data_bp["Diastolic"].min() < minTargetDiastolic else minTargetDiastolic
+        maxDiastolic = data_bp["Diastolic"].max()
+
         # ---------- Chart ----------
         st.subheader("📊 Blood Pressure Trends")
         fig_bp = px.line(
@@ -213,6 +248,9 @@ elif section == "🩺 Blood Pressure Tracker":
             color_discrete_map={"Systolic": "#ef4444", "Diastolic": "#3b82f6"},
         )
         fig_bp.update_layout(height=400, hovermode="x unified")
+        fig_bp.update_layout(yaxis_range=[(minDiastolic-5),(maxSystolic+10)])
+        fig_bp.add_hrect(y0=minTargetSystolic, y1=maxTargetSystolic, line_width=0, fillcolor="red", opacity=0.2)
+        fig_bp.add_hrect(y0=minTargetDiastolic, y1=maxTargetDiastolic, line_width=0, fillcolor="blue", opacity=0.2)
         st.plotly_chart(fig_bp, use_container_width=True)
 
         # ---------- Stats ----------
