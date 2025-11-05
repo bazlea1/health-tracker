@@ -253,6 +253,7 @@ elif section == "🩺 Blood Pressure Tracker":
         fig_bp.update_layout(yaxis_range=[(minDiastolic-5),(maxSystolic+10)])
         fig_bp.add_hrect(y0=minTargetSystolic, y1=maxTargetSystolic, line_width=0, fillcolor="red", opacity=0.2)
         fig_bp.add_hrect(y0=minTargetDiastolic, y1=maxTargetDiastolic, line_width=0, fillcolor="blue", opacity=0.2)
+        fig_bp.update_layout(showlegend=False)
         st.plotly_chart(fig_bp, use_container_width=True)
 
         # ---------- Stats ----------
